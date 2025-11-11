@@ -16,74 +16,94 @@ do
 {
   Console.WriteLine("1) Display categories");
   Console.WriteLine("2) Add category");
+  Console.WriteLine("3) Display Category and related products");
   Console.WriteLine("Enter to quit");
   string? choice = Console.ReadLine();
   
   logger.Info("Option {choice} selected", choice);
 
-  if (choice == "1")
+    if (choice == "1")
     {
-    // display categories
-    var configuration = new ConfigurationBuilder()
-            .AddJsonFile($"appsettings.json");
+        // display categories
+        var configuration = new ConfigurationBuilder()
+                .AddJsonFile($"appsettings.json");
 
-    var config = configuration.Build();
+        var config = configuration.Build();
 
-    var db = new DataContext();
-    var query = db.Categories.OrderBy(p => p.CategoryName);
-
-    Console.ForegroundColor = ConsoleColor.Green;
-    Console.WriteLine($"{query.Count()} records returned");
-    Console.ForegroundColor = ConsoleColor.Magenta;
-    foreach (var item in query)
-    {
-      Console.WriteLine($"{item.CategoryName} - {item.Description}");
-    }
-    Console.ForegroundColor = ConsoleColor.White;
-  }
-  else if (choice == "2")
-    {
-    // Add category
-    Category category = new();
-    Console.WriteLine("Enter Category Name:");
-    category.CategoryName = Console.ReadLine()!;
-    Console.WriteLine("Enter the Category Description:");
-    category.Description = Console.ReadLine();
-    
-    ValidationContext context = new ValidationContext(category, null, null);
-    List<ValidationResult> results = new List<ValidationResult>();
-
-    var isValid = Validator.TryValidateObject(category, context, results, true);
-    if (isValid)
-    {
-        logger.Info("Validation passed");
-        // TODO: save category to db
         var db = new DataContext();
-        // check for unique name
-        if (db.Categories.Any(c => c.CategoryName == category.CategoryName))
+        var query = db.Categories.OrderBy(p => p.CategoryName);
+
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine($"{query.Count()} records returned");
+        Console.ForegroundColor = ConsoleColor.Magenta;
+        foreach (var item in query)
         {
-            // generate validation error
-            isValid = false;
-            results.Add(new ValidationResult("Name exists", ["CategoryName"]));
+            Console.WriteLine($"{item.CategoryName} - {item.Description}");
         }
-        else
+        Console.ForegroundColor = ConsoleColor.White;
+    }
+
+    else if (choice == "2")
+    {
+        // Add category
+        Category category = new();
+        Console.WriteLine("Enter Category Name:");
+        category.CategoryName = Console.ReadLine()!;
+        Console.WriteLine("Enter the Category Description:");
+        category.Description = Console.ReadLine();
+
+        ValidationContext context = new ValidationContext(category, null, null);
+        List<ValidationResult> results = new List<ValidationResult>();
+
+        var isValid = Validator.TryValidateObject(category, context, results, true);
+        if (isValid)
         {
             logger.Info("Validation passed");
             // TODO: save category to db
-      }
+            var db = new DataContext();
+            // check for unique name
+            if (db.Categories.Any(c => c.CategoryName == category.CategoryName))
+            {
+                // generate validation error
+                isValid = false;
+                results.Add(new ValidationResult("Name exists", ["CategoryName"]));
+            }
+            else
+            {
+                logger.Info("Validation passed");
+                // TODO: save category to db
+            }
+        }
+        if (!isValid)
+        {
+            foreach (var result in results)
+            {
+                logger.Error($"{result.MemberNames.First()} : {result.ErrorMessage}");
+            }
+        }
     }
-    if (!isValid)
+
+    else if (choice == "3")
     {
-      foreach (var result in results)
-      {
-        logger.Error($"{result.MemberNames.First()} : {result.ErrorMessage}");
-      }
+        var db = new DataContext();
+        var query = db.Categories.OrderBy(p => p.CategoryId);
+
+        Console.WriteLine("Select the category whose products you want to display:");
+        Console.ForegroundColor = ConsoleColor.DarkRed;
+        foreach (var item in query)
+        {
+            Console.WriteLine($"{item.CategoryId}) {item.CategoryName}");
+        }
+        Console.ForegroundColor = ConsoleColor.White;
+        int id = int.Parse(Console.ReadLine()!);
+        Console.Clear();
+        logger.Info($"CategoryId {id} selected");
     }
-  }
-  else if (String.IsNullOrEmpty(choice))
-  {
-    break;
-  }
+
+    else if (String.IsNullOrEmpty(choice))
+    {
+        break;
+    }
   Console.WriteLine();
 } while (true);
 
